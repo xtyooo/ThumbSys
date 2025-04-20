@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xty.thumbsys.mapper.BlogMapper">
+
+    <resultMap id="BaseResultMap" type="com.xty.thumbsys.model.entity.Blog">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="title" column="title" jdbcType="VARCHAR"/>
+        <result property="coverImg" column="coverImg" jdbcType="VARCHAR"/>
+        <result property="content" column="content" jdbcType="VARCHAR"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,title,coverImg,
+        content,createTime,updateTime
+    </sql>
+
+
+<!--
+这是一段 MyBatis 框架中的 SQL 映射文件（通常是 .xml 格式）里的 <update> 标签内容，用于批量更新 blog 表中的 thumbCount 字段（点赞数）。下面详细解释这段 SQL 语句的各个部分：
+
+<update> 标签：
+id 属性为 "batchUpdateThumbCount"，这是该 SQL 语句在 MyBatis 中的唯一标识，在 Java 代码中通过这个 id 来调用执行该 SQL 语句。
+
+UPDATE 语句主体：
+    UPDATE blog：表示要更新的表名为 blog。
+    SET thumbCount = thumbCount + CASE id：设置要更新的字段为 thumbCount，并且通过 CASE WHEN 语句根据不同的 id 来更新 thumbCount 的值。这里是将 thumbCount 加上一个根据 id 计算得到的值。
+第一个 <foreach> 循环：
+    collection="countMap.entrySet()"：指定循环的集合为 countMap 的键值对集合。countMap 是在 Java 代码中传递过来的一个 Map 对象，它存储了每个 blog 的 id 以及对应的要增加的点赞数。
+    item="value"：表示在循环中每个键值对的值（即要增加的点赞数）会被赋值给 value 变量。
+    index="key"：表示在循环中每个键值对的键（即 blog 的 id）会被赋值给 key 变量。
+    WHEN #{key} THEN #{value}：这是 CASE WHEN 语句的一部分，意思是当 blog 的 id 等于 key 时，将 thumbCount 加上 value。
+   END：结束 CASE WHEN 语句。
+WHERE 子句：
+    WHERE id IN：指定更新的条件，只更新 id 在指定列表中的记录。
+    第二个 <foreach> 循环：
+    collection="countMap.keySet()"：指定循环的集合为 countMap 的键集合，即所有要更新的 blog 的 id 集合。
+    item="id"：表示在循环中每个 id 会被赋值给 id 变量。
+    open="(" separator="," close=")">：定义了 SQL 语句中 IN 子句的格式。open 表示开始符号为 (，separator 表示各个 id 之间的分隔符为 ,，close 表示结束符号为 )。#{id} 则是获取循环中的每个 id 值，用于构建 IN 子句。
+总体来说，这段 SQL 语句的作用是根据传入的 countMap 中存储的 blog 的 id 和对应的点赞数增量，批量更新 blog 表中相应 id 的 thumbCount 字段的值。
+-->
+    <update id="batchUpdateThumbCount">
+        UPDATE blog
+        SET thumbCount = thumbCount + CASE id
+        <foreach collection="countMap.entrySet()" item="value" index="key">
+            WHEN #{key} THEN #{value}
+        </foreach>
+        END
+        WHERE id IN
+        <foreach collection="countMap.keySet()" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+</mapper>

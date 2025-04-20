@@ -13,6 +13,7 @@ import com.xty.thumbsys.model.vo.BlogVO;
 import com.xty.thumbsys.service.BlogService;
 import com.xty.thumbsys.service.ThumbService;
 import com.xty.thumbsys.service.UserService;
+import com.xty.thumbsys.util.RedisKeyUtil;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -79,7 +80,7 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog>
 //                    .in(Thumb::getBlogId, blogIdSet)
 //                    .list();
 
-            List<Object> thumbList = redisTemplate.opsForHash().multiGet(ThumbConstant.USER_THUMB_KEY_PREFIX + loginUser.getId(), blogIdList);
+            List<Object> thumbList = redisTemplate.opsForHash().multiGet(RedisKeyUtil.getUserThumbKey(loginUser.getId()), blogIdList);
 
             for (int i = 0; i < thumbList.size(); i++) {
                 if (thumbList.get(i)==null){

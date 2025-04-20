@@ -5,6 +5,7 @@ import com.xty.thumbsys.common.BaseResponse;
 import com.xty.thumbsys.common.ResultUtils;
 import com.xty.thumbsys.model.dto.thumb.DoThumbRequest;
 import com.xty.thumbsys.service.ThumbService;
+import com.xty.thumbsys.service.impl.ThumbServiceRedisImpl;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +19,8 @@ public class ThumbController {
 
     @Resource
     private ThumbService thumbService;
+
+
 
     @PostMapping("/do")
     public BaseResponse<Boolean> doThumb(@RequestBody DoThumbRequest doThumbRequest, HttpServletRequest request) {

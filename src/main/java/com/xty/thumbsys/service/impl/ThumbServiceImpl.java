@@ -2,9 +2,7 @@ package com.xty.thumbsys.service.impl;
 
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
-import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xty.thumbsys.common.ErrorCode;
 import com.xty.thumbsys.constant.ThumbConstant;
@@ -17,20 +15,19 @@ import com.xty.thumbsys.model.entity.User;
 import com.xty.thumbsys.service.BlogService;
 import com.xty.thumbsys.service.ThumbService;
 import com.xty.thumbsys.service.UserService;
+import com.xty.thumbsys.util.RedisKeyUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.json.JSONObject;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import java.util.Date;
 
 /**
  * @author xtyooo
  */
-@Service
+@Service("thumbServiceDB")
 @Slf4j
 @RequiredArgsConstructor
 public class ThumbServiceImpl extends ServiceImpl<ThumbMapper, Thumb>
@@ -59,19 +56,17 @@ public class ThumbServiceImpl extends ServiceImpl<ThumbMapper, Thumb>
             // 编程式事务
             return transactionTemplate.execute(status -> {
                 Long blogId = doThumbRequest.getBlogId();
-
-                // TODO: 2025/4/19 缓存过期问题    待解决 
                 boolean exists = false;
-                Object o = redisTemplate.opsForHash().get(ThumbConstant.USER_THUMB_KEY_PREFIX + loginUser.getId(), blogId.toString());
-                if (o==null){//说明不在缓存中  可能是没点赞  也可能是帖子发布时间超过一个月了缓存被删除了
+                Object o = redisTemplate.opsForHash().get(RedisKeyUtil.getUserThumbKey(loginUser.getId()), blogId.toString());
+                if (o == null) {//说明不在缓存中  可能是没点赞  也可能是帖子发布时间超过一个月了缓存被删除了
                     exists = this.lambdaQuery()
                             .eq(Thumb::getUserId, loginUser.getId())
                             .eq(Thumb::getBlogId, blogId)
                             .exists();
 
-                    if (exists){//点过赞  但超过一个月   记录从redis中删除
+                    if (exists) {//点过赞  但超过一个月   记录从redis中删除
                         throw new RuntimeException("用户已点赞");
-                    }else {//没点过赞  执行点赞逻辑
+                    } else {//没点过赞  执行点赞逻辑
                         boolean update = blogService.lambdaUpdate()
                                 .eq(Blog::getId, blogId)
                                 .setSql("thumbCount = thumbCount + 1")
@@ -87,16 +82,19 @@ public class ThumbServiceImpl extends ServiceImpl<ThumbMapper, Thumb>
                         if (isSuccess) {
                             ThumbInfo thumbInfo = new ThumbInfo();
                             thumbInfo.setThumbId(thumb.getId());
-                            thumbInfo.setExpireTime(blog.getCreateTime().getTime()+ ThumbConstant.THUMB_EXPIRE_TIME);
-                            String key = ThumbConstant.USER_THUMB_KEY_PREFIX + loginUser.getId().toString();
+                            thumbInfo.setExpireTime(blog.getCreateTime().getTime() + ThumbConstant.THUMB_EXPIRE_TIME);
+                            String key = RedisKeyUtil.getUserThumbKey(loginUser.getId());
                             redisTemplate.opsForHash().put(key, blogId.toString(), thumbInfo);
                         }
                         return isSuccess;
                     }
-                }else {//在缓存中 点过赞了 但还需要 需要判断是否过期  过期的话要删除缓存
+                } else {//在缓存中 点过赞了 但还需要 需要判断是否过期  过期的话要删除缓存
                     ThumbInfo thumbInfo = (ThumbInfo) o;
-                    if (thumbInfo.getExpireTime()<System.currentTimeMillis()){
-                        redisTemplate.opsForHash().delete(ThumbConstant.USER_THUMB_KEY_PREFIX + loginUser.getId(), blogId.toString());
+                    long currentTime = System.currentTimeMillis();
+                    long expireTime = thumbInfo.getExpireTime();
+                    if (expireTime < currentTime) {
+                        // 缓存过期，删除缓存记录
+                        redisTemplate.opsForHash().delete(RedisKeyUtil.getUserThumbKey(loginUser.getId()), blogId.toString());
                     }
                     throw new RuntimeException("用户已点赞");
                 }
@@ -108,6 +106,7 @@ public class ThumbServiceImpl extends ServiceImpl<ThumbMapper, Thumb>
 
     /**
      * 取消点赞
+     *
      * @param doThumbRequest
      * @param request
      * @return
@@ -125,16 +124,16 @@ public class ThumbServiceImpl extends ServiceImpl<ThumbMapper, Thumb>
             return transactionTemplate.execute(status -> {
                 Long blogId = doThumbRequest.getBlogId();
 
-                Object o = redisTemplate.opsForHash().get(ThumbConstant.USER_THUMB_KEY_PREFIX + loginUser.getId(), blogId.toString());
+                Object o = redisTemplate.opsForHash().get(RedisKeyUtil.getUserThumbKey(loginUser.getId()), blogId.toString());
                 boolean success = false;
-                if (o==null){//说明不在缓存中  可能是没点赞  也可能是帖子发布时间超过一个月了缓存被删除了
+                if (o == null) {//说明不在缓存中  可能是没点赞  也可能是帖子发布时间超过一个月了缓存被删除了
 
                     LambdaQueryWrapper<Thumb> lambdaQueryWrapper = new LambdaQueryWrapper<Thumb>()
                             .eq(Thumb::getUserId, loginUser.getId())
                             .eq(Thumb::getBlogId, blogId);
                     Thumb thumb = this.getOne(lambdaQueryWrapper);
 
-                    if (thumb == null){//没点过赞
+                    if (thumb == null) {//没点过赞
                         throw new RuntimeException("用户未点赞");
                     }
                     //点过赞 但超过一个月   记录从redis中删除 取消点赞需要从数据库中删除
@@ -143,20 +142,20 @@ public class ThumbServiceImpl extends ServiceImpl<ThumbMapper, Thumb>
                     boolean update = blogService.update(updateWrapper);
 
                     //点赞表删除对应点赞记录
-                     success = update && this.removeById(thumb.getId());
-                }else {//在缓存中 点过赞了 删除缓存 和 数据库的点赞记录
+                    success = update && this.removeById(thumb.getId());
+                } else {//在缓存中 点过赞了 删除缓存 和 数据库的点赞记录
                     ThumbInfo thumbInfo = (ThumbInfo) o;
                     //博客点赞数-1
                     UpdateWrapper<Blog> updateWrapper = new UpdateWrapper<Blog>().eq("id", blogId).setSql("thumbCount = thumbCount - 1");
                     boolean update = blogService.update(updateWrapper);
 
                     //点赞表删除对应点赞记录
-                     success = update && this.removeById(thumbInfo.getThumbId());
+                    success = update && this.removeById(thumbInfo.getThumbId());
 
 
                     // 点赞记录从 Redis 删除
                     if (success) {
-                        redisTemplate.opsForHash().delete(ThumbConstant.USER_THUMB_KEY_PREFIX + loginUser.getId(), blogId.toString());
+                        redisTemplate.opsForHash().delete(RedisKeyUtil.getUserThumbKey(loginUser.getId()), blogId.toString());
                     }
                 }
                 return success;
@@ -166,12 +165,10 @@ public class ThumbServiceImpl extends ServiceImpl<ThumbMapper, Thumb>
 
     @Override
     public Boolean hasThumb(Long blogId, Long userId) {
-        String key = ThumbConstant.USER_THUMB_KEY_PREFIX + userId.toString();
+        String key = RedisKeyUtil.getUserThumbKey(userId);
 
         return redisTemplate.opsForHash().hasKey(key, blogId.toString());
     }
-
-
 
 
 }
