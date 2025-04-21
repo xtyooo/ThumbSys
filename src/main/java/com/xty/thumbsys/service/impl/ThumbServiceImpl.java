@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xty.thumbsys.common.ErrorCode;
 import com.xty.thumbsys.constant.ThumbConstant;
+import com.xty.thumbsys.manager.cache.CacheManager;
 import com.xty.thumbsys.mapper.ThumbMapper;
 import com.xty.thumbsys.model.dto.thumb.DoThumbRequest;
 import com.xty.thumbsys.model.dto.thumb.ThumbInfo;
@@ -27,7 +28,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 /**
  * @author xtyooo
  */
-@Service("thumbServiceDB")
+@Service("thumbService")
 @Slf4j
 @RequiredArgsConstructor
 public class ThumbServiceImpl extends ServiceImpl<ThumbMapper, Thumb>
@@ -40,6 +41,8 @@ public class ThumbServiceImpl extends ServiceImpl<ThumbMapper, Thumb>
     private final TransactionTemplate transactionTemplate;
 
     private final RedisTemplate<String, Object> redisTemplate;
+
+    private final CacheManager cacheManager;
 
     @Override
     public Boolean doThumb(DoThumbRequest doThumbRequest, HttpServletRequest request) {
@@ -57,7 +60,8 @@ public class ThumbServiceImpl extends ServiceImpl<ThumbMapper, Thumb>
             return transactionTemplate.execute(status -> {
                 Long blogId = doThumbRequest.getBlogId();
                 boolean exists = false;
-                Object o = redisTemplate.opsForHash().get(RedisKeyUtil.getUserThumbKey(loginUser.getId()), blogId.toString());
+//                Object o = redisTemplate.opsForHash().get(RedisKeyUtil.getUserThumbKey(loginUser.getId()), blogId.toString());
+                Object o = cacheManager.get(RedisKeyUtil.getUserThumbKey(loginUser.getId()), blogId.toString());
                 if (o == null) {//说明不在缓存中  可能是没点赞  也可能是帖子发布时间超过一个月了缓存被删除了
                     exists = this.lambdaQuery()
                             .eq(Thumb::getUserId, loginUser.getId())
@@ -83,8 +87,10 @@ public class ThumbServiceImpl extends ServiceImpl<ThumbMapper, Thumb>
                             ThumbInfo thumbInfo = new ThumbInfo();
                             thumbInfo.setThumbId(thumb.getId());
                             thumbInfo.setExpireTime(blog.getCreateTime().getTime() + ThumbConstant.THUMB_EXPIRE_TIME);
-                            String key = RedisKeyUtil.getUserThumbKey(loginUser.getId());
-                            redisTemplate.opsForHash().put(key, blogId.toString(), thumbInfo);
+                            String hashKey = RedisKeyUtil.getUserThumbKey(loginUser.getId());
+                            redisTemplate.opsForHash().put(hashKey, blogId.toString(), thumbInfo);
+                            cacheManager.putIfPresent(hashKey, blogId.toString(), thumbInfo);//这里只有key在本地缓存中存在  才会进行更新  而不会主动添加之前不存在的key
+                            //只有查询时才会进行统计并校验是否符合hotKey   如果满足hotKey条件  则进行添加
                         }
                         return isSuccess;
                     }
@@ -124,7 +130,8 @@ public class ThumbServiceImpl extends ServiceImpl<ThumbMapper, Thumb>
             return transactionTemplate.execute(status -> {
                 Long blogId = doThumbRequest.getBlogId();
 
-                Object o = redisTemplate.opsForHash().get(RedisKeyUtil.getUserThumbKey(loginUser.getId()), blogId.toString());
+//                Object o = redisTemplate.opsForHash().get(RedisKeyUtil.getUserThumbKey(loginUser.getId()), blogId.toString());
+                Object o = cacheManager.get(RedisKeyUtil.getUserThumbKey(loginUser.getId()), blogId.toString());
                 boolean success = false;
                 if (o == null) {//说明不在缓存中  可能是没点赞  也可能是帖子发布时间超过一个月了缓存被删除了
 
@@ -156,6 +163,8 @@ public class ThumbServiceImpl extends ServiceImpl<ThumbMapper, Thumb>
                     // 点赞记录从 Redis 删除
                     if (success) {
                         redisTemplate.opsForHash().delete(RedisKeyUtil.getUserThumbKey(loginUser.getId()), blogId.toString());
+                        thumbInfo.setThumbId(0L);
+                        cacheManager.putIfPresent(RedisKeyUtil.getUserThumbKey(loginUser.getId()), blogId.toString(),thumbInfo);
                     }
                 }
                 return success;
@@ -167,7 +176,15 @@ public class ThumbServiceImpl extends ServiceImpl<ThumbMapper, Thumb>
     public Boolean hasThumb(Long blogId, Long userId) {
         String key = RedisKeyUtil.getUserThumbKey(userId);
 
-        return redisTemplate.opsForHash().hasKey(key, blogId.toString());
+//        return redisTemplate.opsForHash().hasKey(key, blogId.toString());
+        Object o = cacheManager.get(key, blogId.toString());
+
+        if (o == null){
+            return false;
+        }
+        ThumbInfo thumbInfo = (ThumbInfo) o;
+        Long thumbId = thumbInfo.getThumbId();
+        return thumbId != 0;
     }
 
 

@@ -20,7 +20,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
 
-@Service("thumbService")
+@Service("thumbServiceRedis")
 @Slf4j
 @RequiredArgsConstructor
 public class ThumbServiceRedisImpl extends ServiceImpl<ThumbMapper, Thumb> implements ThumbService {

@@ -49,7 +49,7 @@ public class SyncThumb2DBJob {
      *      就会造成中间的数据[20:41:20,20:41:40)没被入库和删除   一直存在于redis中
      */
     // 每十秒执行一次
-    @Scheduled(initialDelay = 10000, fixedDelay = 10000)
+    @Scheduled(initialDelay = 10000, fixedRate = 10000)
     @Transactional(rollbackFor = Exception.class)
     public void run() {
         log.info("定时任务开始执行");
