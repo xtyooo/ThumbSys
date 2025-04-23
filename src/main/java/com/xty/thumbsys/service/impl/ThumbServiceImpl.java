@@ -28,7 +28,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 /**
  * @author xtyooo
  */
-@Service("thumbService")
+@Service("thumbServiceLocalCache")
 @Slf4j
 @RequiredArgsConstructor
 public class ThumbServiceImpl extends ServiceImpl<ThumbMapper, Thumb>
@@ -184,6 +184,7 @@ public class ThumbServiceImpl extends ServiceImpl<ThumbMapper, Thumb>
         }
         ThumbInfo thumbInfo = (ThumbInfo) o;
         Long thumbId = thumbInfo.getThumbId();
+        // 如果 thumbId = 0,表示 点过赞 但又取消了
         return thumbId != 0;
     }
 

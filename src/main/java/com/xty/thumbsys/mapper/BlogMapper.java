@@ -2,6 +2,7 @@ package com.xty.thumbsys.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.xty.thumbsys.model.entity.Blog;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.Map;
 
@@ -10,7 +11,7 @@ import java.util.Map;
  */
 public interface BlogMapper extends BaseMapper<Blog> {
 
-    void batchUpdateThumbCount(Map<Long,Long> countMap);
+    void batchUpdateThumbCount(@Param("countMap") Map<Long,Long> countMap);
 }
 
 

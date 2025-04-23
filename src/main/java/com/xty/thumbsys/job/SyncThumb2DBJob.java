@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * 在thumb表中增加对应的点赞记录
  * 在blog表中增加对应博客的点赞数
  */
-@Component
+//@Component
 @Slf4j
 public class SyncThumb2DBJob {
 
@@ -101,7 +101,14 @@ public class SyncThumb2DBJob {
 
         //在blog表中增加对应博客的点赞数
         if (!blogIdToThumbCountMap.isEmpty()){
-            blogMapper.batchUpdateThumbCount(blogIdToThumbCountMap);
+            try {
+                log.info("开始批量更新博客点赞数，参数: {}", blogIdToThumbCountMap);
+                blogMapper.batchUpdateThumbCount(blogIdToThumbCountMap);
+                log.info("批量更新博客点赞数成功");
+            } catch (Exception e) {
+                log.error("批量更新博客点赞数时出错，参数: {}", blogIdToThumbCountMap, e);
+                throw e;
+            }
         }
 
 

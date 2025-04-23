@@ -46,7 +46,7 @@ public class CacheManager {
 
     @Bean
     public Cache<String,Object> localCache() {
-        Cache<String,Object> localCache = Caffeine.newBuilder()
+        localCache = Caffeine.newBuilder()
                 .maximumSize(100000)
                 .expireAfterWrite(5, TimeUnit.MINUTES)
                 .build();

@@ -4,17 +4,17 @@ import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.data.redis.core.script.RedisScript;
 
 public class RedisLuaScriptConstant {
-  
-    /**  
-     * 点赞 Lua 脚本  
-     * KEYS[1]       -- 临时计数键  
-     * KEYS[2]       -- 用户点赞状态键  
-     * ARGV[1]       -- 用户 ID  
-     * ARGV[2]       -- 博客 ID  
-     * 返回:  
-     * -1: 已点赞  
-     * 1: 操作成功  
-     */  
+
+    /**
+     * 点赞 Lua 脚本
+     * KEYS[1]       -- 临时计数键
+     * KEYS[2]       -- 用户点赞状态键
+     * ARGV[1]       -- 用户 ID
+     * ARGV[2]       -- 博客 ID
+     * 返回:
+     * -1: 已点赞
+     * 1: 操作成功
+     */
     public static final RedisScript<Long> THUMB_SCRIPT = new DefaultRedisScript<>("""  
             local tempThumbKey = KEYS[1]       -- 临时计数键（如 thumb:temp:{timeSlice}）  
             local userThumbKey = KEYS[2]       -- 用户点赞状态键（如 thumb:{userId}）  
@@ -38,15 +38,15 @@ public class RedisLuaScriptConstant {
             redis.call('HSET', userThumbKey, blogId, 1)  
               
             return 1  -- 返回 1 表示成功  
-            """, Long.class);  
-  
-    /**  
-     * 取消点赞 Lua 脚本  
-     * 参数同上  
-     * 返回：  
-     * -1: 未点赞  
-     * 1: 操作成功  
-     */  
+            """, Long.class);
+
+    /**
+     * 取消点赞 Lua 脚本
+     * 参数同上
+     * 返回：
+     * -1: 未点赞
+     * 1: 操作成功
+     */
     public static final RedisScript<Long> UNTHUMB_SCRIPT = new DefaultRedisScript<>("""  
             local tempThumbKey = KEYS[1]      -- 临时计数键（如 thumb:temp:{timeSlice}）  
             local userThumbKey = KEYS[2]      -- 用户点赞状态键（如 thumb:{userId}）  
@@ -70,5 +70,61 @@ public class RedisLuaScriptConstant {
             redis.call('HDEL', userThumbKey, blogId)  
               
             return 1  -- 返回 1 表示成功  
-            """, Long.class);  
+            """, Long.class);
+
+
+    /**
+     * MQ 点赞 Lua 脚本
+     * KEYS[1]       -- 用户点赞状态键
+     * ARGV[1]       -- 博客 ID
+     * 返回：
+     * 1: 操作成功
+     * -1: 已点赞
+     */
+    public static final RedisScript<Long> THUMB_SCRIPT_MQ = new DefaultRedisScript<>("""
+            local userThumbKey = KEYS[1]
+            local blogId = ARGV[1]
+                        
+            --- 判断是否已经点赞
+            if redis.call("HEXISTS",userThumbKey,blogId) == 1 then
+                return -1
+            end
+                        
+            --- 添加点赞记录
+            redis.call("HSET",userThumbKey,blogId,1)
+            return 1
+                        
+            """, Long.class);
+
+
+
+
+    /**
+     * MQ 取消点赞 Lua 脚本
+     * KEYS[1]       -- 用户点赞状态键
+     * ARGV[1]       -- 博客 ID
+     * 返回:
+     * -1: 已点赞
+     * 1: 操作成功
+     */
+    public static final RedisScript<Long> UNTHUMB_SCRIPT_MQ = new DefaultRedisScript<>("""
+        local userThumbKey = KEYS[1]
+        local blogId = ARGV[1]
+          
+        -- 判断是否已点赞
+        if redis.call("HEXISTS", userThumbKey, blogId) == 0 then
+            return -1
+        end
+          
+        -- 删除点赞记录
+        redis.call("HDEL", userThumbKey, blogId)
+        return 1
+        """, Long.class);
+
 }
+
+
+
+
+
+
