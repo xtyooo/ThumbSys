@@ -3,6 +3,8 @@
 ThumbSys 是一个基于 Spring Boot 的高性能点赞系统，专注于解决高并发场景下的点赞功能实现。项目通过多级缓存、消息队列等技术，实现了从基础功能到性能优化的全方位解决方案。
 
 ![系统整体架构图](img\6RGUKSEubNJ9fhRc.webp)
+![系统整体架构图](img/6RGUKSEubNJ9fhRc.webp)
+## 项目特点
 
 ## 项目特点 ✨
 
@@ -23,7 +25,7 @@ ThumbSys 是一个基于 Spring Boot 的高性能点赞系统，专注于解决�
 
 ### 多级缓存架构
 
-![多级缓存架构](img\9Ioq82qpPLpZHRtX.webp)
+![多级缓存架构](img/9Ioq82qpPLpZHRtX.webp)
 
 1. **本地缓存层(Caffeine)**：存储热点数据，减轻 Redis 压力 💾
 2. **分布式缓存层(Redis)**：存储用户点赞记录和临时点赞数据 🔄
@@ -44,6 +46,9 @@ ThumbSys 是一个基于 Spring Boot 的高性能点赞系统，专注于解决�
 
 ### 优化 3：本地缓存分担 Redis 压力
 
+- 自研 HeavyKeeper 算法识别热点 Key
+  ![HeavyKeeper算法示意图](img/image.png)
+- 本地缓存热点数据，减轻 Redis 负载
 - 自研 HeavyKeeper 算法识别热点 Key 🔍
   ![HeavyKeeper算法示意图](img\image.png)
 - 本地缓存热点数据，减轻 Redis 负载 ⚖️
@@ -199,11 +204,11 @@ mvn clean package
 java -jar target/ThumbSys-0.0.1-SNAPSHOT.jar
 ```
 
-## 接口文档 📄
+## 接口文档
 
 启动项目后，访问：http://localhost:8080/doc.html 查看 API 文档
 
-## 贡献指南 🤝
+## 贡献指南
 
 1. Fork 本仓库
 2. 创建特性分支 (`git checkout -b feature/amazing-feature`)
@@ -211,12 +216,12 @@ java -jar target/ThumbSys-0.0.1-SNAPSHOT.jar
 4. 推送到分支 (`git push origin feature/amazing-feature`)
 5. 开启 Pull Request
 
-## 许可证 📜
+## 许可证
 
 MIT License
 
-## 联系方式 📞
+## 联系方式
 
-- 作者：xtyooo 👨‍💻
-- 邮箱：[1286214601@qq.com] 📧
-- GitHub：[https://github.com/xtyooo](https://github.com/xtyooo) 🌐
+- 作者：xtyooo
+- 邮箱：[1286214601@qq.com]
+- GitHub：[https://github.com/xtyooo](https://github.com/xtyooo)
