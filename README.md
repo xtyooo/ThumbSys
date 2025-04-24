@@ -1,7 +1,7 @@
 # ThumbSys - 高性能点赞系统
 
 ThumbSys 是一个基于 Spring Boot 的高性能点赞系统，专注于解决高并发场景下的点赞功能实现。项目通过多级缓存、消息队列等技术，实现了从基础功能到性能优化的全方位解决方案。
-![系统整体架构图](img\6RGUKSEubNJ9fhRc.webp)
+![系统整体架构图](img/6RGUKSEubNJ9fhRc.webp)
 ## 项目特点
 
 - **多级缓存架构**：本地缓存(Caffeine) + 分布式缓存(Redis) + 数据库(MySQL/TiDB)
