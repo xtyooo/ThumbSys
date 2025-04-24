@@ -2,7 +2,6 @@
 
 ThumbSys 是一个基于 Spring Boot 的高性能点赞系统，专注于解决高并发场景下的点赞功能实现。项目通过多级缓存、消息队列等技术，实现了从基础功能到性能优化的全方位解决方案。
 
-![系统整体架构图](img\6RGUKSEubNJ9fhRc.webp)
 ![系统整体架构图](img/6RGUKSEubNJ9fhRc.webp)
 ## 项目特点
 
@@ -49,9 +48,7 @@ ThumbSys 是一个基于 Spring Boot 的高性能点赞系统，专注于解决�
 - 自研 HeavyKeeper 算法识别热点 Key
   ![HeavyKeeper算法示意图](img/image.png)
 - 本地缓存热点数据，减轻 Redis 负载
-- 自研 HeavyKeeper 算法识别热点 Key 🔍
-  ![HeavyKeeper算法示意图](img\image.png)
-- 本地缓存热点数据，减轻 Redis 负载 ⚖️
+
 
 ### 优化 4：消息队列实现异步处理
 
