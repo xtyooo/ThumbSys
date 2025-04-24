@@ -12,8 +12,5 @@ import java.util.Date;
 @Data
 public class DoThumbRequest {
     private Long blogId;
-    /**
-     * 创建时间
-     */
-    private Date createTime;
+
 }
