@@ -21,7 +21,7 @@ ThumbSys 是一个基于 Spring Boot 的高性能点赞系统，专注于解决�
 
 ### 多级缓存架构
 
-![多级缓存架构](img\9Ioq82qpPLpZHRtX.webp)
+![多级缓存架构](img/9Ioq82qpPLpZHRtX.webp)
 
 1. **本地缓存层(Caffeine)**：存储热点数据，减轻 Redis 压力
 2. **分布式缓存层(Redis)**：存储用户点赞记录和临时点赞数据
@@ -43,7 +43,7 @@ ThumbSys 是一个基于 Spring Boot 的高性能点赞系统，专注于解决�
 ### 优化 3：本地缓存分担 Redis 压力
 
 - 自研 HeavyKeeper 算法识别热点 Key
-  ![HeavyKeeper算法示意图](img\image.png)
+  ![HeavyKeeper算法示意图](img/image.png)
 - 本地缓存热点数据，减轻 Redis 负载
 
 ### 优化 4：消息队列实现异步处理
